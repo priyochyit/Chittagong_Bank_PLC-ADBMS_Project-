@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en" title="Admin Page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Chittagong Bank PLC</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='Logo.svg') }}" sizes="500x500">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- Fast Scrolling & Touch Screen Fix --- */
+        html { 
+            scroll-behavior: smooth; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        @media (hover: none) and (pointer: coarse), (max-width: 768px) {
+            #c-cursor, #c-follower { display: none !important; visibility: hidden !important; }
+            * { cursor: auto !important; }
+        }
+
+        /* ========================================================= */
+        /* --- ULTRA IOS-LEVEL SMOOTHNESS & ANTI-LAG ENGINE --- */
+        /* ========================================================= */
+        
+        /* 1. Stop background from forcing massive layout repaints */
+        .bg-canvas { will-change: auto !important; -webkit-transform: translateZ(0); transform: translateZ(0); }
+        
+        /* 2. Hardware-accelerate scrolling container */
+        html, body {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            overscroll-behavior-y: none !important; /* Stops bounce-lag */
+            touch-action: pan-y !important; /* Ultra-fast vertical scroll response */
+        }
+
+        /* 3. Force Hardware Acceleration (GPU) for heavy UI elements */
+        .glass-header, .mobile-nav, .premium-card, .premium-table-wrapper, .modal-content, .edit-modal-box {
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            perspective: 1000px;
+            will-change: transform;
+        }
+
+        @media (max-width: 768px) {
+            /* 4. Kill extremely expensive blur filters on scrolling cards */
+            .premium-card, .premium-table-wrapper, .info-panel {
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+                background-color: rgba(255, 255, 255, 0.98) !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important; /* Cheaper shadow */
+            }
+            body.dark-mode .premium-card, body.dark-mode .premium-table-wrapper, body.dark-mode .info-panel, body.dark-mode #statistics-info {
+                background-color: rgba(0, 20, 40, 0.98) !important;
+            }
+            
+            /* 5. Simplify fixed elements blur to iOS native levels */
+            .glass-header, .mobile-nav {
+                -webkit-backdrop-filter: blur(12px) !important;
+                backdrop-filter: blur(12px) !important;
+                background-color: rgba(255, 255, 255, 0.9) !important;
+                will-change: auto !important; /* Prevent layer explosion */
+            }
+            body.dark-mode .glass-header, body.dark-mode .mobile-nav {
+                background-color: rgba(0, 15, 30, 0.9) !important;
+            }
+
+            /* 6. Disable heavy transitions during scroll */
+            * {
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            
+            /* 7. Prevent expensive hover state recalcs on scroll */
+            .premium-card:hover, .stat-card:hover, .mobile-nav button:hover, .mobile-nav a:hover {
+                transform: none !important;
+            }
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary-navy: #001e3c;
+            --accent-blue: #3b82f6;
+            --glass-white: rgba(255, 255, 255, 0.7);
+            --danger-red: #ef4444;
+            --success-green: #10b981;
+        }
+
+        /* Fast click response & setup */
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; cursor: none; }
+        
+        body { 
+            background: #f0f7ff; 
+            min-height: 100vh; 
+            color: var(--primary-navy);
+            overflow-x: hidden;
+            padding-bottom: 80px; 
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        @media (min-width: 768px) { body { padding-bottom: 0; } }
+
+        /* --- PREMIUM SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 46, 91, 0.05); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #002e5b, #dc2626); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #dc2626, #002e5b); }
+
+        .bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 0% 0%, #e0f2fe 0%, transparent 50%), #f8fbff;
+            transition: background 0.5s ease;
+        }
+
+        /* Custom Cursor */
+        #c-cursor { width: 6px; height: 6px; background: #dc2626; border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999999 !important; transform: translate(-50%, -50%); transition: none; }
+        #c-follower { width: 35px; height: 35px; background: rgba(224, 242, 254, 0.4); border: 1.5px solid rgba(186, 230, 253, 0.7); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999998 !important; transition: transform 0.02s ease-out; }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.5s ease;
+        }
+
+        .premium-table-wrapper {
+            background: white; border-radius: 25px; padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 46, 91, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .lux-table { width: 100%; border-collapse: separate; }
+        .lux-table thead th { 
+            padding: 15px; text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #f1f5f9;
+        }
+        .lux-table tbody tr td { padding: 15px; text-align: center; border-bottom: 1px solid #f1f5f9; }
+
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 30, 60, 0.6); backdrop-filter: blur(5px);
+            z-index: 100000 !important; justify-content: center; align-items: center; padding: 20px;
+        }
+
+        .stat-card { cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(59, 130, 246, 0.1); }
+
+        .info-panel { display: none; animation: slideDown 0.4s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .mobile-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; padding: 10px 5px 6px 5px;
+            box-shadow: 0 -5px 25px rgba(0, 46, 91, 0.08); z-index: 90;
+            border-top-left-radius: 25px; border-top-right-radius: 25px; transition: background 0.5s ease;
+        }
+
+        @media (min-width: 768px) { .mobile-nav { display: none; } }
+
+        /* --- MOBILE SPA & CARD VIEW --- */
+        @media (max-width: 768px) {
+            .page-view { display: none; }
+            .page-view.active-view { display: block; animation: fadeIn 0.3s ease; }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+            .lux-table, .lux-table thead, .lux-table tbody, .lux-table th, .lux-table td, .lux-table tr { display: block; }
+            .lux-table thead tr { position: absolute; top: -9999px; left: -9999px; }
+            .lux-table tr { margin-bottom: 1.5rem; background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); padding: 10px; border: 1px solid #f1f5f9; }
+            body.dark-mode .lux-table tr { background: rgba(0, 30, 60, 0.45); border-color: rgba(255,255,255,0.05); }
+            .lux-table td { border: none !important; border-bottom: 1px dashed #f1f5f9 !important; position: relative; padding: 12px 10px 12px 45% !important; text-align: right !important; display: flex; justify-content: flex-end; align-items: center; }
+            body.dark-mode .lux-table td { border-bottom-color: rgba(255,255,255,0.05) !important; }
+            .lux-table td:last-child { border-bottom: 0 !important; justify-content: center; padding-left: 10px !important; padding-top: 16px !important; }
+            .lux-table td::before { content: attr(data-label); position: absolute; left: 10px; width: 40%; text-align: left; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+            body.dark-mode .lux-table td::before { color: #94a3b8; }
+            .lux-table td:last-child::before { display: none; }
+        }
+        @media (min-width: 769px) {
+            .page-view { display: block !important; }
+        }
+
+        /* ================= DARK MODE STYLES (IOS GLASS EFFECT) ================= */
+        body.dark-mode { background: #001024; color: #e2e8f0; }
+        body.dark-mode .bg-canvas { background: radial-gradient(circle at 0% 0%, rgba(0, 46, 91, 0.8) 0%, transparent 50%), #000a18; }
+        body.dark-mode .glass-header { background: rgba(0, 20, 40, 0.6); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .premium-table-wrapper { background: rgba(0, 30, 60, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); color: #e2e8f0; }
+        body.dark-mode .text-ultra-dark, body.dark-mode .text-\[\#002e5b\], body.dark-mode .text-slate-800 { color: #f8fafc; }
+        body.dark-mode .text-slate-400, body.dark-mode .text-slate-500 { color: #94a3b8; }
+        body.dark-mode .text-slate-600 { color: #cbd5e1; }
+        body.dark-mode .bg-white { background: rgba(0, 20, 40, 0.8) !important; border-color: rgba(255,255,255,0.1) !important; color: #f8fafc; }
+        body.dark-mode .bg-slate-50, body.dark-mode .bg-slate-100 { background: rgba(0, 15, 30, 0.6) !important; border-color: rgba(255,255,255,0.05) !important; color: #e2e8f0; }
+        body.dark-mode .bg-blue-50 { background: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.2) !important; color: #93c5fd !important; }
+        body.dark-mode .bg-emerald-50 { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.2) !important; color: #6ee7b7 !important; }
+        body.dark-mode .bg-amber-50 { background: rgba(245, 158, 11, 0.1) !important; border-color: rgba(245, 158, 11, 0.2) !important; color: #fcd34d !important; }
+        body.dark-mode .bg-red-50 { background: rgba(239, 68, 68, 0.1) !important; border-color: rgba(239, 68, 68, 0.2) !important; color: #fca5a5 !important; }
+        body.dark-mode .bg-purple-50 { background: rgba(168, 85, 247, 0.1) !important; border-color: rgba(168, 85, 247, 0.2) !important; color: #d8b4fe !important; }
+        body.dark-mode .info-panel { background: rgba(0, 20, 40, 0.6); border: 1px solid rgba(255,255,255,0.1); }
+        body.dark-mode #statistics-info { background: rgba(0, 30, 60, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        body.dark-mode .mobile-nav { background: rgba(0, 20, 40, 0.92); border-top: 1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .mobile-nav button:not(.active), body.dark-mode .mobile-nav a:not(.active) { color: #94a3b8; }
+        body.dark-mode .lux-table thead th { color: #94a3b8; border-bottom: 2px solid rgba(255,255,255,0.1); }
+        body.dark-mode .lux-table tbody tr td { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .modal-content, body.dark-mode #blockchain-modal > div { background: rgba(0, 20, 40, 0.85); backdrop-filter: blur(25px); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); }
+        body.dark-mode input, body.dark-mode select { background: rgba(0, 15, 30, 0.6) !important; color: #e0f2fe !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        body.dark-mode select option { background: #001024; color: #e0f2fe; }
+        
+        /* Edit Modal Dark Mode Enhancement */
+        body.dark-mode .edit-modal-box { background: rgba(0, 20, 40, 0.95) !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5) !important; }
+        body.dark-mode .edit-modal-box h2 { color: #38bdf8 !important; }
+        body.dark-mode .edit-modal-box label { color: #94a3b8 !important; }
+        body.dark-mode .edit-modal-box input, body.dark-mode .edit-modal-box select { background: rgba(0, 15, 30, 0.8) !important; color: #e2e8f0 !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        body.dark-mode .edit-modal-box .bg-slate-100 { background: rgba(255,255,255,0.1) !important; color: #fff !important; border-color: rgba(255,255,255,0.1) !important; }
+    </style>
+</head>
+<body>
+    <div class="bg-canvas"></div>
+    <div id="c-cursor"></div>
+    <div id="c-follower"></div>
+
+    <header class="glass-header sticky top-0 z-50">
+        <div class="max-w-[1600px] mx-auto px-6 md:px-10">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white rounded-lg shadow p-2 transition-colors duration-500">
+                        <img src="{{ url_for('static', filename='Logo.svg') }}" class="w-full h-full object-contain" alt="Logo">
+                    </div>
+                    <div>
+                        <h1 class="font-black text-lg text-ultra-dark leading-tight transition-colors duration-500">ADMIN <span class="text-blue-600">PANEL</span></h1>
+                        <p class="text-[9px] font-bold text-blue-500 uppercase tracking-widest hidden sm:block">Chittagong Bank PLC</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div class="text-right hidden md:block">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Active Admin</span>
+                        <p class="text-sm font-extrabold text-ultra-dark">{{ user.name }}</p>
+                    </div>
+                    <button id="theme-toggle" onclick="toggleTheme()" class="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm active:scale-95 transition-all duration-75">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <a href="{{ url_for('logout') }}" class="bg-red-500 text-white px-5 md:px-6 py-2.5 rounded-xl font-bold text-[10px] hover:bg-red-600 active:scale-95 transition-all duration-75 uppercase">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="py-6 md:py-10 px-4 md:px-10 max-w-[1600px] mx-auto">
+        
+        <div id="dashboard-view" class="page-view active-view">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
+                <div onclick="togglePanel('vault-info')" class="premium-card flex flex-col items-center justify-center text-center gap-2 border-b-4 border-blue-500 cursor-pointer active:scale-95 transition-transform duration-75 p-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 transition-colors duration-500">
+                        <i class="fas fa-building-columns text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Vault Reserve</h4>
+                        <p class="text-sm md:text-xl font-black text-ultra-dark mt-0.5">৳ 550.5M</p>
+                    </div>
+                </div>
+                
+                <div onclick="togglePanel('users-info')" class="premium-card flex flex-col items-center justify-center text-center gap-2 border-b-4 border-emerald-500 cursor-pointer active:scale-95 transition-transform duration-75 p-4">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 transition-colors duration-500">
+                        <i class="fas fa-users text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wide">Registered Clients</h4>
+                        <p class="text-sm md:text-xl font-black text-ultra-dark mt-0.5">{{ users|length }}</p>
+                    </div>
+                </div>
+                
+                <div onclick="togglePanel('security-info')" class="premium-card flex flex-col items-center justify-center text-center gap-2 border-b-4 border-amber-500 cursor-pointer active:scale-95 transition-transform duration-75 p-4">
+                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 transition-colors duration-500">
+                        <i class="fas fa-shield-alt text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wide">Security Shield</h4>
+                        <p class="text-sm md:text-xl font-black text-ultra-dark mt-0.5">Secured</p>
+                    </div>
+                </div>
+                
+                <div onclick="togglePanel('cbs-info')" class="premium-card flex flex-col items-center justify-center text-center gap-2 border-b-4 border-red-500 cursor-pointer active:scale-95 transition-transform duration-75 p-4">
+                    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-600 transition-colors duration-500">
+                        <i class="fas fa-network-wired text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wide">Network Gateway</h4>
+                        <p class="text-sm md:text-xl font-black text-ultra-dark mt-0.5">Active</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vault-info" class="info-panel mb-8 p-6 bg-blue-50 rounded-3xl border border-blue-100 transition-colors duration-500">
+                <h5 class="text-xs font-black text-blue-600 uppercase mb-2">Liquidity Status</h5>
+                <p class="text-sm text-slate-600">Total liquid assets matching Bangladesh Bank central reserve requirements.</p>
+            </div>
+            <div id="users-info" class="info-panel mb-8 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 transition-colors duration-500">
+                <h5 class="text-xs font-black text-emerald-600 uppercase mb-2">User Demographics</h5>
+                <p class="text-sm text-slate-600">Currently managing {{ users|length }} active bank accounts securely across the nation.</p>
+            </div>
+            <div id="security-info" class="info-panel mb-8 p-6 bg-amber-50 rounded-3xl border border-amber-100 transition-colors duration-500">
+                <h5 class="text-xs font-black text-amber-600 uppercase mb-2">AI Fraud Detection</h5>
+                <p class="text-sm text-slate-600">Reinforcement Learning AI Agent is actively monitoring all transactions for anomalies.</p>
+            </div>
+            <div id="cbs-info" class="info-panel mb-8 p-6 bg-red-50 rounded-3xl border border-red-100 transition-colors duration-500">
+                <h5 class="text-xs font-black text-red-600 uppercase mb-2">Core Banking System</h5>
+                <p class="text-sm text-slate-600">All gateways and database servers are fully synchronized and operational.</p>
+            </div>
+        </div>
+
+        <div id="statistics-view" class="page-view mt-8 md:mt-0">
+            <div id="statistics-info" class="mb-8 p-6 bg-white rounded-3xl border border-blue-100 shadow-xl transition-colors duration-500">
+                <div class="flex justify-between items-center mb-6">
+                    <h5 class="text-xs font-black text-blue-600 uppercase">Real-Time Transaction Volume</h5>
+                    <span class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[9px] font-black uppercase shadow-sm">Live Updates</span>
+                </div>
+                <div class="relative w-full h-[300px]">
+                    <canvas id="txChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="users-view" class="page-view mt-8 md:mt-0">
+            <div class="premium-table-wrapper overflow-x-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-black uppercase text-slate-500">Customer Management</h3>
+                </div>
+                <table class="lux-table w-full md:min-w-[800px]">
+                    <thead>
+                        <tr>
+                            <th>Account No</th>
+                            <th>Customer Details</th>
+                            <th>Account Status</th>
+                            <th>Role</th>
+                            <th>Balance (BDT)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td data-label="Account No" class="font-mono font-bold text-blue-600 text-sm">#{{ u.account_no }}</td>
+                            <td data-label="Customer Details">
+                                <div class="text-right md:text-center">
+                                    <div class="font-extrabold text-ultra-dark text-sm">{{ u.name }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ u.email }}</div>
+                                </div>
+                            </td>
+                            <td data-label="Account Status">
+                                <span class="status-badge {{ 'bg-emerald-100 text-emerald-600' if u.role != 'admin' else 'bg-blue-100 text-blue-600' }}">
+                                    Active
+                                </span>
+                            </td>
+                            <td data-label="Role">
+                                <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase bg-slate-100 text-slate-600 transition-colors duration-500">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td data-label="Balance (BDT)" class="text-ultra-dark font-black text-sm">
+                                ৳ {{ "{:,.2f}".format(u.balance) }}
+                            </td>
+                            <td data-label="Actions">
+                                <div class="flex justify-end md:justify-center gap-2">
+                                    <button onclick="openModal('edit-{{ u.id }}')" class="w-8 h-8 bg-blue-50 text-blue-600 flex items-center justify-center rounded-lg hover:bg-blue-600 hover:text-white active:scale-90 transition-all duration-75" title="Edit User">
+                                        <i class="fas fa-edit text-xs"></i>
+                                    </button>
+                                    <form action="{{ url_for('delete_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this account?')">
+                                        <button type="submit" class="w-8 h-8 bg-red-50 text-red-500 flex items-center justify-center rounded-lg hover:bg-red-600 hover:text-white active:scale-90 transition-all duration-75" title="Delete User">
+                                            <i class="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% for u in users %}
+        <div id="edit-{{ u.id }}" class="modal-overlay">
+            <div class="edit-modal-box bg-white p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transition-colors duration-500">
+                <h2 class="text-xl font-black mb-6 uppercase text-blue-600">Edit Customer</h2>
+                <form action="{{ url_for('edit_user', user_id=u.id) }}" method="POST">
+                    <div class="space-y-4 text-left">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
+                            <input type="text" name="name" value="{{ u.name }}" class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm font-bold mt-1 transition-colors duration-500" required>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Email</label>
+                            <input type="email" name="email" value="{{ u.email }}" class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm font-bold mt-1 transition-colors duration-500" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">Role</label>
+                                <select name="role" class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm font-bold mt-1 transition-colors duration-500">
+                                    <option value="user" {{ 'selected' if u.role == 'user' }}>User</option>
+                                    <option value="staff" {{ 'selected' if u.role == 'staff' }}>Staff</option>
+                                    <option value="admin" {{ 'selected' if u.role == 'admin' }}>Admin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">Balance</label>
+                                <input type="number" step="0.01" name="balance" value="{{ u.balance }}" class="w-full bg-slate-50 border-none p-3 rounded-xl text-sm font-bold mt-1 transition-colors duration-500" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-8">
+                        <button type="button" onclick="closeModal('edit-{{ u.id }}')" class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs uppercase active:scale-95 transition-transform duration-75">Cancel</button>
+                        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase shadow-lg shadow-blue-200 active:scale-95 transition-transform duration-75">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+
+    </main>
+
+    <nav class="mobile-nav">
+        <button onclick="switchPage('dashboard-view', this)" class="flex flex-col items-center gap-0.5 text-blue-600 active:scale-95 transition-transform duration-75 active">
+            <i class="fa-solid fa-layer-group text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Dashboard</span>
+        </button>
+        <button onclick="switchPage('statistics-view', this); initChart();" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-chart-pie text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Statistics</span>
+        </button>
+        <button onclick="switchPage('users-view', this)" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-users-cog text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Customers</span>
+        </button>
+        <a href="{{ url_for('logout') }}" class="flex flex-col items-center gap-0.5 text-red-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-power-off text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Logout</span>
+        </a>
+    </nav>
+
+    <script>
+        // --- CUSTOM CURSOR LOGIC ---
+        document.addEventListener('mousemove', (e) => {
+            if (window.innerWidth <= 768) return; // Performance fix: stop mobile DOM thrashing
+            const cursor = document.getElementById('c-cursor');
+            const follower = document.getElementById('c-follower');
+            if(cursor && follower) {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+                follower.style.left = (e.clientX - 17.5) + 'px';
+                follower.style.top = (e.clientY - 17.5) + 'px';
+            }
+        });
+
+        // --- MOBILE TAB (SPA) LOGIC ---
+        function switchPage(pageId, btn) {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.page-view').forEach(p => p.style.display = 'none');
+                document.getElementById(pageId).style.display = 'block';
+                
+                document.querySelectorAll('.mobile-nav button, .mobile-nav a').forEach(b => {
+                    b.classList.remove('active');
+                    if(b.classList.contains('text-red-400')) return; // keep logout red
+                    b.classList.add('text-slate-400');
+                    b.classList.remove('text-blue-600');
+                    if(b.querySelector('span')) b.querySelector('span').style.color = '';
+                });
+                btn.classList.add('active');
+                btn.classList.remove('text-slate-400');
+                btn.classList.add('text-blue-600');
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } else {
+                if (pageId === 'statistics-view') {
+                    document.getElementById('statistics-info').scrollIntoView({behavior: 'smooth'});
+                } else if (pageId === 'users-view') {
+                    document.querySelector('.premium-table-wrapper').scrollIntoView({behavior: 'smooth'});
+                } else {
+                    window.scrollTo({top: 0, behavior: 'smooth'});
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if(window.innerWidth > 768) {
+                document.querySelectorAll('.page-view').forEach(p => p.style.display = 'block');
+            } else {
+                const activeBtn = document.querySelector('.mobile-nav button.active');
+                if(activeBtn) activeBtn.click();
+            }
+        });
+
+        // --- REAL-TIME BAR CHART LOGIC ---
+        let myChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('txChart').getContext('2d');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Raw transaction data passed from backend
+            const txRawData = [
+                {% for tx in transactions %}
+                { amount: {{ tx.amount }}, date: "{{ tx.timestamp.strftime('%b %d') }}" },
+                {% endfor %}
+            ];
+
+            // Group transactions by date for the bar chart
+            const txGrouped = {};
+            txRawData.forEach(tx => {
+                txGrouped[tx.date] = (txGrouped[tx.date] || 0) + tx.amount;
+            });
+            const chartLabels = Object.keys(txGrouped);
+            const chartValues = Object.values(txGrouped);
+
+            if(myChart) {
+                myChart.destroy(); // Prevent canvas overlay issues
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels.length ? chartLabels : ['No Data'],
+                    datasets: [{
+                        label: 'Transaction Volume (BDT)',
+                        data: chartValues.length ? chartValues : [0],
+                        backgroundColor: isDark ? 'rgba(56, 189, 248, 0.8)' : 'rgba(0, 46, 91, 0.8)',
+                        borderColor: isDark ? 'rgba(56, 189, 248, 1)' : 'rgba(0, 46, 91, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barPercentage: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+                            ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { family: "'Plus Jakarta Sans', sans-serif" } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { family: "'Plus Jakarta Sans', sans-serif" } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? 'rgba(0,20,40,0.9)' : 'rgba(255,255,255,0.9)',
+                            titleColor: isDark ? '#38bdf8' : '#002e5b',
+                            bodyColor: isDark ? '#e2e8f0' : '#64748b',
+                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 13, weight: 'bold' },
+                            bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- DARK MODE THEME LOGIC ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const themeIcon = themeBtn.querySelector('i');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+            
+            // Re-render chart smoothly if panel is open to sync colors
+            if(document.getElementById('statistics-info').parentElement.style.display !== 'none') {
+                initChart();
+            }
+        }
+        
+        function updateThemeIcon(isDark) {
+            if (isDark) {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                themeBtn.classList.replace('text-blue-600', 'text-yellow-400');
+                themeBtn.classList.add('bg-white/10');
+                themeBtn.classList.remove('bg-slate-50');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                themeBtn.classList.replace('text-yellow-400', 'text-blue-600');
+                themeBtn.classList.add('bg-slate-50');
+                themeBtn.classList.remove('bg-white/10');
+            }
+        }
+        
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+            updateThemeIcon(false);
+        }
+
+        function togglePanel(panelId) {
+            const panels = document.querySelectorAll('.info-panel');
+            panels.forEach(p => { if(p.id !== panelId) p.style.display = 'none'; });
+            const panel = document.getElementById(panelId);
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // Modal control functions
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // Close modal when clicking on overlay
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) { 
+                event.target.style.display = 'none'; 
+            }
+        }
+    </script>
+    
+    <script>
+        let inactivityTime = function () {
+            let time;
+            window.onload = resetTimer;
+            document.onmousemove = resetTimer;
+            document.onkeypress = resetTimer;
+            document.onscroll = resetTimer;
+            document.onclick = resetTimer;
+            document.ontouchstart = resetTimer;
+
+            function logout() {
+                window.location.href = "{{ url_for('logout') }}";
+            }
+
+            function resetTimer() {
+                clearTimeout(time);
+                time = setTimeout(logout, 120000); // 120000 ms = 2 minutes
+            }
+        };
+        inactivityTime();
+        
+        // Initialize chart on desktop load
+        if(window.innerWidth > 768) {
+            setTimeout(initChart, 500);
+        }
+    </script>
+</body>
+</html>
+}
