@@ -1,0 +1,173 @@
+/* Chittagong Bank PLC - Premium Admin UI Framework
+    Theme: Modern Dark-Glass & Slate Blue
+*/
+
+:root {
+    --primary-blue: #002e5b;
+    --accent-crimson: #e11d48;
+    --sidebar-bg: #0b1120;
+    --surface-light: #ffffff;
+    --bg-main: #f3f4f6;
+    
+    /* Animation Curves */
+    --bezier: cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Shadows */
+    --premium-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    --inner-glow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Base Styling */
+body.admin-body {
+    background: var(--bg-main);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: #1e293b;
+    overflow-x: hidden;
+}
+
+/* --- SIDEBAR REVOLUTION --- */
+.sidebar-premium {
+    background: var(--sidebar-bg);
+    background-image: radial-gradient(circle at 0% 0%, rgba(225, 29, 72, 0.15) 0%, transparent 50%);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+    transition: all 0.4s var(--bezier);
+}
+
+.nav-item {
+    position: relative;
+    transition: all 0.3s var(--bezier);
+    margin: 8px 16px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background: var(--accent-crimson);
+    transition: width 0.3s var(--bezier);
+}
+
+.nav-item:hover::before {
+    width: 4px;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+/* --- PREMIUM CARD DESIGN --- */
+.stat-card-unique {
+    background: var(--surface-light);
+    border-radius: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s var(--bezier);
+    box-shadow: var(--premium-shadow);
+}
+
+.stat-card-unique:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 30px 40px -15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-blue);
+}
+
+.stat-card-unique::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 100px;
+    height: 100px;
+    background: var(--primary-blue);
+    opacity: 0.03;
+    border-radius: 50%;
+}
+
+/* --- DATA TABLE MODERNIZATION --- */
+.glass-table-container {
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: var(--premium-shadow);
+    overflow: hidden;
+}
+
+.premium-table thead {
+    background: #f8fafc;
+}
+
+.premium-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    padding: 1.25rem 1rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.premium-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.premium-table tbody tr:hover {
+    background-color: #fcfdfe;
+}
+
+/* --- GLASS BUTTONS --- */
+.btn-premium {
+    background: var(--primary-blue);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.3s var(--bezier);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-premium:hover {
+    background: var(--accent-crimson);
+    box-shadow: 0 10px 20px -5px rgba(225, 29, 72, 0.4);
+    transform: translateY(-2px);
+}
+
+/* --- CUSTOM SCROLLBAR (PRO) --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    border: 2px solid var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+    animation: fadeIn 0.5s var(--bezier) forwards;
+}

@@ -1,0 +1,87 @@
+/* Premium Typography & Variable Setup */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary-blue: #002e5b;    /* Deep Royal Blue */
+    --accent-red: #e11d48;      /* Premium Crimson Red */
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    cursor: default; /* For custom cursor support */
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* Custom Premium Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--primary-blue);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-red);
+}
+
+/* Glassmorphism Effect for Quick Services */
+.quick-service-glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    transition: var(--transition);
+}
+
+/* Card Hover Effects */
+.service-card {
+    background: #ffffff;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.service-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 46, 91, 0.1);
+    border-color: rgba(225, 29, 72, 0.2);
+}
+
+.service-card i {
+    transition: var(--transition);
+}
+
+.service-card:hover i {
+    transform: rotateY(180deg);
+}
+
+/* Interactive Elements */
+a, button, .cursor-pointer {
+    cursor: pointer !important;
+}
+
+/* Hero Section Image Zoom Animation */
+.hero-img {
+    animation: slowZoom 20s infinite alternate;
+}
+
+@keyframes slowZoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+}
+
