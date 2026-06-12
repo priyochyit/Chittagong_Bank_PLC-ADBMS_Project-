@@ -1,0 +1,38 @@
+# Environment Variables (NEVER commit secrets)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Flask
+instance/
+.webassets-cache
+
+# Database files (PostgreSQL)
+*.db
+*.sqlite
+*.sqlite3
+
+# User-uploaded files (NID images, profile pictures - personal data)
+# Keep the folder structure + default avatar, ignore everything else
+static/uploads/*
+!static/uploads/.gitkeep
+!static/uploads/default_avatar.png
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
