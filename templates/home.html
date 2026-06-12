@@ -8,6 +8,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* --- Fast Scrolling & Touch Screen Fix --- */
+        html { 
+            scroll-behavior: smooth; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        @media (hover: none) and (pointer: coarse), (max-width: 768px) {
+            #c-cursor, #c-follower { display: none !important; visibility: hidden !important; }
+            * { cursor: auto !important; }
+        }
+
         /* --- CORE STYLING & CUSTOM CURSOR --- */
         * { 
             box-sizing: border-box; 
