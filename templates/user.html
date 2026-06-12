@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard | Chittagong Bank PLC</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='Logo.svg') }}" sizes="500x500">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary-navy: #001e3c;
+            --accent-blue: #3b82f6;
+            --glass-white: rgba(255, 255, 255, 0.7);
+            --ultra-dark: #001e3c;
+        }
+
+        /* Fast click response & setup */
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; cursor: none; }
+        
+        body { 
+            background: #f0f7ff; 
+            min-height: 100vh; 
+            color: var(--primary-navy);
+            overflow-x: hidden;
+            padding-bottom: 80px;
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        @media (min-width: 768px) { body { padding-bottom: 0; } }
+
+        /* --- PREMIUM SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 46, 91, 0.05); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #002e5b, #dc2626); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #dc2626, #002e5b); }
+        
+        #statement-box::-webkit-scrollbar { width: 4px; }
+        #statement-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: none; }
+
+        /* Custom Cursor */
+        #c-cursor { width: 6px; height: 6px; background: #dc2626; border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999999 !important; transform: translate(-50%, -50%); transition: none; }
+        #c-follower { width: 35px; height: 35px; background: rgba(224, 242, 254, 0.4); border: 1.5px solid rgba(186, 230, 253, 0.7); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999998 !important; transition: transform 0.02s ease-out; }
+
+        .bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 0% 0%, #e0f2fe 0%, transparent 50%), #f8fbff;
+            transition: background 0.5s ease;
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.5s ease;
+        }
+
+        .premium-card {
+            background: white; border-radius: 25px; padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 46, 91, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(59, 130, 246, 0.1); }
+
+        .method-btn { background: white; border: 2px solid #f1f5f9; transition: all 0.3s ease; }
+        .method-btn:hover { border-color: #3b82f6; background: #f8fbff; }
+        .active-tab { border-color: #3b82f6 !important; background: #eff6ff !important; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.1); }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 30, 60, 0.4); backdrop-filter: blur(8px);
+            z-index: 100000 !important; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .receipt-card, .profile-card {
+            background: white; width: 100%; max-width: 450px; border-radius: 30px;
+            overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: scale(0.9); transition: all 0.3s ease;
+            max-h: 90vh; overflow-y: auto;
+        }
+        .modal-overlay.active .receipt-card, .modal-overlay.active .profile-card { transform: scale(1); }
+
+        .mobile-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; padding: 10px 5px 6px 5px;
+            box-shadow: 0 -5px 25px rgba(0, 46, 91, 0.08); z-index: 90;
+            border-top-left-radius: 25px; border-top-right-radius: 25px; transition: background 0.5s ease;
+        }
+
+        @media (min-width: 768px) { .mobile-nav { display: none; } }
+
+        /* --- MOBILE SPA VIEW --- */
+        @media (max-width: 768px) {
+            .page-view { display: none; }
+            .page-view.active-view { display: block; animation: fadeIn 0.3s ease; }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        }
+        @media (min-width: 769px) {
+            .page-view { display: block !important; }
+        }
+        
+        .avatar-container { width: 100px; height: 100px; border-radius: 30px; overflow: hidden; border: 4px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative; }
+
+        /* ================= DARK MODE STYLES (IOS GLASS EFFECT) ================= */
+        body.dark-mode { background: #001024; color: #e2e8f0; }
+        body.dark-mode .bg-canvas { background: radial-gradient(circle at 0% 0%, rgba(0, 46, 91, 0.8) 0%, transparent 50%), #000a18; }
+        body.dark-mode .glass-header { background: rgba(0, 20, 40, 0.6); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .premium-card { background: rgba(0, 30, 60, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); color: #e2e8f0; }
+        body.dark-mode .text-ultra-dark, body.dark-mode .text-\[\#002e5b\], body.dark-mode .text-slate-800 { color: #f8fafc; }
+        body.dark-mode .text-slate-400, body.dark-mode .text-slate-500 { color: #94a3b8; }
+        body.dark-mode .text-slate-600 { color: #cbd5e1; }
+        body.dark-mode .bg-white { background: rgba(0, 20, 40, 0.8) !important; border-color: rgba(255,255,255,0.1) !important; color: #f8fafc; }
+        body.dark-mode .bg-slate-50, body.dark-mode .bg-slate-100 { background: rgba(0, 15, 30, 0.6) !important; border-color: rgba(255,255,255,0.05) !important; color: #e2e8f0; }
+        body.dark-mode .bg-blue-50 { background: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.2) !important; color: #93c5fd !important; }
+        body.dark-mode .bg-emerald-50 { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.2) !important; color: #6ee7b7 !important; }
+        body.dark-mode .bg-amber-50 { background: rgba(245, 158, 11, 0.1) !important; border-color: rgba(245, 158, 11, 0.2) !important; color: #fcd34d !important; }
+        body.dark-mode .bg-red-50 { background: rgba(239, 68, 68, 0.1) !important; border-color: rgba(239, 68, 68, 0.2) !important; color: #fca5a5 !important; }
+        body.dark-mode .mobile-nav { background: rgba(0, 20, 40, 0.92); border-top: 1px solid rgba(255,255,255,0.05); }
+        body.dark-mode .mobile-nav button:not(.active), body.dark-mode .mobile-nav a:not(.active) { color: #94a3b8; }
+        body.dark-mode .receipt-card, body.dark-mode .profile-card { background: rgba(0, 20, 40, 0.85); backdrop-filter: blur(25px); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); }
+        body.dark-mode .receipt-card .bg-blue-600 { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        body.dark-mode input, body.dark-mode select { background: rgba(0, 15, 30, 0.6) !important; color: #e0f2fe !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        body.dark-mode select option { background: #001024; color: #e0f2fe; }
+        body.dark-mode .method-btn { background: rgba(0, 20, 40, 0.6); border-color: rgba(255,255,255,0.1); color: #e0f2fe; }
+        body.dark-mode .method-btn span { color: #94a3b8; }
+        body.dark-mode .method-btn.active-tab { background: rgba(2, 132, 199, 0.2) !important; border-color: #0ea5e9 !important; }
+        body.dark-mode .method-btn.active-tab span { color: #e0f2fe; }
+        body.dark-mode .border-slate-200, body.dark-mode .border-slate-50, body.dark-mode .border { border-color: rgba(255,255,255,0.1); }
+        body.dark-mode ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        body.dark-mode ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #0ea5e9, #dc2626); }
+        body.dark-mode #statement-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+        body.dark-mode .avatar-container { border-color: rgba(255,255,255,0.1); }
+        body.dark-mode .dark-mode-action-btn { background: rgba(0, 15, 30, 0.6) !important; border-color: rgba(255,255,255,0.05) !important; }
+        body.dark-mode .dark-mode-action-btn:hover { background: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.3) !important; }
+        body.dark-mode .dark-mode-action-btn span { color: #e2e8f0 !important; }
+        
+        /* Fix Transfer Logos Visibility in Dark Mode */
+        body.dark-mode .method-btn img { background: rgba(255, 255, 255, 0.95); padding: 3px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+    <div class="bg-canvas"></div>
+    <div id="c-cursor"></div>
+    <div id="c-follower"></div>
+
+    <div id="receiptModal" class="modal-overlay" onclick="closeReceipt()">
+        <div class="receipt-card" onclick="event.stopPropagation()">
+            <div class="bg-blue-600 p-8 text-white text-center relative transition-colors duration-500">
+                <button onclick="closeReceipt()" class="absolute top-4 right-4 opacity-70 hover:opacity-100 transition-all active:scale-95 duration-75"><i class="fas fa-times"></i></button>
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-3xl"></i>
+                </div>
+                <h2 class="text-xs font-bold uppercase tracking-widest opacity-80">Transaction Successful</h2>
+                <p class="text-4xl font-black mt-2">৳ <span id="modal-amount">0.00</span></p>
+            </div>
+            <div class="p-8 space-y-4">
+                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400 uppercase">Method</span><span id="modal-method" class="text-xs font-black text-ultra-dark uppercase bg-slate-100 px-3 py-1 rounded-full">---</span></div>
+                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400 uppercase">Related Party</span><span id="modal-recipient" class="text-xs font-black text-ultra-dark">---</span></div>
+                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400 uppercase">Date & Time</span><span id="modal-time" class="text-xs font-black text-ultra-dark">---</span></div>
+                <div class="flex justify-between items-center"><span class="text-[10px] font-bold text-slate-400 uppercase">Status</span><span class="text-[10px] font-black text-emerald-500 uppercase flex items-center gap-1"><i class="fas fa-shield-check"></i> Secure</span></div>
+                <button onclick="closeReceipt()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all duration-75 active:scale-95 mt-4">Close Receipt</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal-overlay" onclick="closeProfile()">
+        <div class="profile-card" onclick="event.stopPropagation()">
+            <div class="bg-slate-900 p-8 text-white relative transition-colors duration-500">
+                <button onclick="closeProfile()" class="absolute top-4 right-4 opacity-70 hover:opacity-100 transition-all active:scale-95 duration-75"><i class="fas fa-times"></i></button>
+                <div class="flex items-center gap-5">
+                    <div class="avatar-container">
+                        <img id="profile-preview" src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <h2 class="text-xl font-black">{{ user.name }}</h2>
+                            <div class="relative flex items-center justify-center" title="Verified Account">
+                                <div class="absolute w-[50%] h-[50%] bg-white rounded-full z-0"></div>
+                                <i class="fas fa-check-circle text-[#0866FF] text-sm relative z-10"></i>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Account ID: {{ user.account_no }}</p>
+                    </div>
+                </div>
+            </div>
+            <form action="{{ url_for('update_profile') }}" method="POST" enctype="multipart/form-data" class="p-8 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Full Name</label>
+                        <input type="text" name="name" value="{{ user.name }}" class="w-full mt-1 p-3 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-colors duration-500">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Phone</label>
+                        <input type="text" name="phone" value="{{ user.phone }}" class="w-full mt-1 p-3 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-colors duration-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase">Income Source</label>
+                    <select name="income_source" class="w-full mt-1 p-3 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-colors duration-500">
+                        <option value="salary" {% if user.income_source == 'salary' %}selected{% endif %}>Salary / Job</option>
+                        <option value="business" {% if user.income_source == 'business' %}selected{% endif %}>Business Income</option>
+                        <option value="freelancing" {% if user.income_source == 'freelancing' %}selected{% endif %}>Freelancing / IT</option>
+                        <option value="remittance" {% if user.income_source == 'remittance' %}selected{% endif %}>Remittance</option>
+                    </select>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 transition-colors duration-500">
+                    <label class="text-[9px] font-black text-blue-600 uppercase block mb-2">Update Profile Picture (Max 2MB)</label>
+                    <input type="file" name="profile_pic" accept="image/*" class="text-[10px] font-bold text-slate-500" onchange="previewImage(this)">
+                </div>
+                
+                <div class="pt-2">
+                    <h4 class="text-[9px] font-black text-slate-300 uppercase mb-3 border-b border-slate-200 pb-1">Personal Details</h4>
+                    <div class="grid grid-cols-2 gap-y-2">
+                        <p class="text-[10px] font-bold text-slate-500">NID: <span class="text-ultra-dark">{{ user.nid_number }}</span></p>
+                        <p class="text-[10px] font-bold text-slate-500">DOB: <span class="text-ultra-dark">{{ user.dob }}</span></p>
+                        <p class="text-[10px] font-bold text-slate-500">Purpose: <span class="text-ultra-dark uppercase">{{ user.purpose }}</span></p>
+                        <p class="text-[10px] font-bold text-slate-500">Email: <span class="text-ultra-dark">{{ user.email }}</span></p>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 transition-all duration-75 active:scale-95 mt-2">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <header class="glass-header sticky top-0 z-50">
+        <div class="max-w-[1600px] mx-auto px-4 md:px-10">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                <div class="flex items-center gap-2 md:gap-4">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-white rounded-lg shadow p-1.5 md:p-2 transition-colors duration-500">
+                        <img src="{{ url_for('static', filename='Logo.svg') }}" class="w-full h-full object-contain" alt="Logo">
+                    </div>
+                    <div>
+                        <h1 class="font-black text-sm md:text-lg text-ultra-dark leading-tight transition-colors duration-500">USER <span class="text-blue-600">PORTAL</span></h1>
+                        <p class="text-[7px] md:text-[9px] font-bold text-blue-500 uppercase tracking-widest hidden sm:block">Chittagong Bank PLC</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 md:gap-4">
+                    <button id="theme-toggle" onclick="toggleTheme()" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm active:scale-95 transition-all duration-75">
+                        <i class="fas fa-moon text-sm"></i>
+                    </button>
+                    
+                    <div onclick="openProfile()" class="flex items-center gap-2 md:gap-3 bg-slate-50 p-1 md:p-1.5 pr-2.5 md:pr-4 rounded-xl md:rounded-2xl border border-slate-200 cursor-pointer active:scale-95 transition-all duration-75">
+                        <div class="w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl overflow-hidden bg-white shadow-sm border border-white flex-shrink-0">
+                            <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="text-right flex flex-col justify-center">
+                            <span class="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase block leading-none mb-1">My Account</span>
+                            <div class="flex items-center justify-end gap-1">
+                                <p class="text-[9px] md:text-[11px] font-extrabold text-ultra-dark leading-none whitespace-nowrap">{{ user.name }}</p>
+                                <div class="relative flex items-center justify-center" title="Verified Account">
+                                    <div class="absolute w-[60%] h-[60%] bg-white rounded-full z-0"></div>
+                                    <i class="fas fa-check-circle text-[#0866FF] text-[10px] md:text-[12px] relative z-10"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="hidden sm:inline-block bg-red-500 text-white px-5 md:px-6 py-2.5 rounded-xl font-bold text-[10px] hover:bg-red-600 active:scale-95 transition-all duration-75 uppercase">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="py-6 md:py-10 px-4 md:px-10 max-w-[1600px] mx-auto">
+        <div id="flash-messages-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if message != "Logged in successfully" and "Welcome" not in message %}
+                            <div class="flash-msg mb-4 p-4 rounded-2xl text-[11px] font-bold uppercase tracking-wider transition-colors duration-500 {{ 'bg-emerald-50 text-emerald-600 border border-emerald-100' if category == 'success' else 'bg-red-50 text-red-600 border border-red-100' }}">
+                                <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }} mr-2"></i> {{ message }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div id="dashboard-view" class="page-view active-view">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+                <div class="premium-card stat-card flex items-center gap-4 bg-blue-600 text-white overflow-hidden relative group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
+                    <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white text-xl shadow-inner">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-blue-100 uppercase tracking-widest mb-1">Total Balance</h4>
+                        <p class="text-2xl font-black">৳ <span id="display-balance">{{ "{:,.2f}".format(user.balance) }}</span></p>
+                    </div>
+                </div>
+                
+                <div class="premium-card stat-card flex items-center gap-4 border-b-4 border-emerald-500 group">
+                    <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 text-xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">E-KYC Status</h4>
+                        <p class="text-sm font-black text-emerald-600 uppercase flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Verified
+                        </p>
+                    </div>
+                </div>
+
+                <div class="premium-card stat-card flex items-center gap-4 border-b-4 border-amber-500 group">
+                    <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 text-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">A/C Number</h4>
+                        <p class="text-sm font-black text-ultra-dark">{{ user.account_no }}</p>
+                    </div>
+                </div>
+
+                <div class="premium-card stat-card flex items-center gap-4 border-b-4 border-red-500 cursor-pointer group active:scale-95 transition-all duration-75" onclick="alert('Your active DPS schemes will appear here.')">
+                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 text-xl group-hover:bg-red-500 group-hover:text-white transition-all duration-300">
+                        <i class="fas fa-piggy-bank"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active DPS</h4>
+                        <p class="text-sm font-black text-red-600 uppercase">৳ 2,000 /mo</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="premium-card mb-8">
+                <h3 class="text-sm font-black uppercase mb-5 text-slate-500 tracking-wider"><i class="fas fa-bolt mr-2 text-blue-600"></i> Quick Services</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button onclick="alert('Mobile Recharge service is temporarily down for maintenance.')" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 active:scale-95 transition-all duration-75 dark-mode-action-btn">
+                        <i class="fas fa-mobile-alt text-emerald-600 text-2xl"></i>
+                        <span class="text-[10px] font-black text-ultra-dark uppercase tracking-wide mt-1">Recharge</span>
+                    </button>
+                    <button onclick="alert('Utility Bill Pay service will be available soon.')" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 active:scale-95 transition-all duration-75 dark-mode-action-btn">
+                        <i class="fas fa-lightbulb text-amber-500 text-2xl"></i>
+                        <span class="text-[10px] font-black text-ultra-dark uppercase tracking-wide mt-1">Pay Bill</span>
+                    </button>
+                    <button onclick="alert('Add Money from Card/Bank is currently unavailable.')" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 active:scale-95 transition-all duration-75 dark-mode-action-btn">
+                        <i class="fas fa-plus-circle text-blue-600 text-2xl"></i>
+                        <span class="text-[10px] font-black text-ultra-dark uppercase tracking-wide mt-1">Add Money</span>
+                    </button>
+                    <button onclick="alert('Card Management module is under construction.')" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 active:scale-95 transition-all duration-75 dark-mode-action-btn">
+                        <i class="fas fa-credit-card text-purple-600 text-2xl"></i>
+                        <span class="text-[10px] font-black text-ultra-dark uppercase tracking-wide mt-1">My Cards</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <div id="transfer-view" class="page-view lg:col-span-3 premium-card mt-8 md:mt-0">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-sm font-black uppercase text-slate-500 tracking-wider"><i class="fas fa-exchange-alt mr-2 text-blue-600"></i> Blockchain Secured Transaction</h3>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-3 mb-8">
+                    <button onclick="setMethod('upi')" id="tab-upi" class="method-btn active-tab rounded-2xl p-4 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-75">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" class="h-6 object-contain" alt="UPI">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-slate-600">UPI</span>
+                    </button>
+                    <button onclick="setMethod('paypal')" id="tab-paypal" class="method-btn rounded-2xl p-4 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-75">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" class="h-6 object-contain" alt="PayPal">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-slate-600">PayPal</span>
+                    </button>
+                    <button onclick="setMethod('mfs')" id="tab-mfs" class="method-btn rounded-2xl p-4 flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-75">
+                        <div class="flex gap-2 items-center">
+                            <img src="https://logos-world.net/wp-content/uploads/2024/10/Bkash-Logo.png" class="h-4 object-contain" alt="bKash">
+                            <img src="https://tse3.mm.bing.net/th/id/OIP.xLvCy8wt41e5nLZjnlFf7wHaHa?rs=1&pid=ImgDetMain&o=7&rm=3" class="h-5 object-contain" alt="Nagad">
+                        </div>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-slate-600">bKash/Nagad</span>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label id="method-label" class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">UPI ID / Account No</label>
+                        <input type="text" id="recipient-id" placeholder="CBL-XXXXXX" class="w-full mt-2 p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all outline-none font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">Amount (BDT)</label>
+                        <input type="number" id="transfer-amount" placeholder="0.00" class="w-full mt-2 p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all outline-none font-bold text-sm">
+                    </div>
+                    <button onclick="confirmTransfer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all duration-75 shadow-lg shadow-blue-100 active:scale-[0.98] uppercase text-xs tracking-widest mt-4">Transfer Amount</button>
+                </div>
+            </div>
+
+            <div id="history-view" class="page-view lg:col-span-2 premium-card flex flex-col mt-8 md:mt-0">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-black text-slate-500 uppercase tracking-wider">Activity Monitoring</h3>
+                    <a href="#" class="text-blue-600 text-[10px] font-black hover:underline uppercase active:scale-95 transition-all duration-75 inline-block">View All</a>
+                </div>
+                <div id="statement-box" class="space-y-3 flex-1 overflow-y-auto max-h-[420px] pr-2">
+                    {% for tx in history %}
+                        {% set is_received = (tx.receiver_id == user.id) %}
+                        {% set display_name = tx.sender.name if is_received else tx.receiver.name %}
+                    <div onclick='openReceipt({{ tx.amount|tojson }}, {{ tx.method|tojson }}, {{ display_name|tojson }}, {{ tx.timestamp.strftime("%d %b %Y | %I:%M %p")|tojson }})' 
+                         class="group flex justify-between items-center p-4 {{ 'bg-emerald-50 border-emerald-100' if is_received else 'bg-red-50 border-red-100' }} {{ 'opacity-50 grayscale' if tx.status == 'Reversed' else '' }} rounded-2xl border cursor-pointer transition-all duration-75 active:scale-95 dark-mode-activity-card">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 bg-white {{ 'text-emerald-600' if is_received else 'text-red-500' }} rounded-xl flex items-center justify-center mr-3 shadow-sm transition-colors duration-500">
+                                <i class="fas {{ 'fa-plus' if is_received else 'fa-arrow-up' }} text-[10px]"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-xs">{{ tx.method }} {{ 'Received' if is_received else 'Sent' }} {{ '(REVERSED)' if tx.status == 'Reversed' else '' }}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">{{ 'From' if is_received else 'To' }}: {{ display_name }}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1.5">
+                            <div class="flex items-center gap-3">
+                                <p class="font-black {{ 'text-emerald-600' if is_received else 'text-red-500' }} text-xs">{{ '+' if is_received else '-' }}৳ {{ "{:,.2f}".format(tx.amount) }}</p>
+                                {% if tx.status != 'Reversed' %}
+                                <button onclick="reverseRow(event, this, '{{ tx.id }}')" title="Reverse Transaction" class="text-slate-300 hover:text-blue-500 transition-colors duration-75 active:scale-90 px-2 py-1"><i class="fas fa-undo-alt text-[10px]"></i></button>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-[8.5px] font-black uppercase tracking-widest px-2 py-1 rounded-md flex items-center gap-1 shadow-sm transition-colors duration-500
+                                {% if 'Secure' in tx.ai_status %} bg-emerald-100 text-emerald-700 border border-emerald-200
+                                {% elif 'Anomaly' in tx.ai_status %} bg-red-100 text-red-700 border border-red-200 animate-pulse
+                                {% elif 'Unusual' in tx.ai_status %} bg-amber-100 text-amber-700 border border-amber-200
+                                {% else %} bg-blue-100 text-blue-700 border border-blue-200 {% endif %}">
+                                <i class="fas fa-robot text-[9px]"></i> <span>{{ tx.ai_status }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="mobile-nav">
+        <button onclick="switchPage('dashboard-view', this)" class="flex flex-col items-center gap-0.5 text-blue-600 active:scale-95 transition-transform duration-75 active">
+            <i class="fa-solid fa-house-chimney text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Home</span>
+        </button>
+        <button onclick="switchPage('transfer-view', this)" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-paper-plane text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Transfer</span>
+        </button>
+        <button onclick="switchPage('history-view', this)" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-clock-rotate-left text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Activity</span>
+        </button>
+        <button onclick="openProfile()" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-user-gear text-[18px]"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Profile</span>
+        </button>
+        <a href="{{ url_for('logout') }}" class="flex flex-col items-center gap-0.5 text-slate-400 active:scale-95 transition-transform duration-75">
+            <i class="fa-solid fa-power-off text-[18px] text-red-500"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider">Logout</span>
+        </a>
+    </nav>
+
+    <script>
+        // --- CUSTOM CURSOR LOGIC ---
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.getElementById('c-cursor');
+            const follower = document.getElementById('c-follower');
+            if(cursor && follower) {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+                follower.style.left = (e.clientX - 17.5) + 'px';
+                follower.style.top = (e.clientY - 17.5) + 'px';
+            }
+        });
+
+        // --- MOBILE TAB (SPA) LOGIC ---
+        function switchPage(pageId, btn) {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.page-view').forEach(p => p.style.display = 'none');
+                document.getElementById(pageId).style.display = 'block';
+                
+                document.querySelectorAll('.mobile-nav button, .mobile-nav a').forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.add('text-slate-400');
+                    b.classList.remove('text-blue-600');
+                    if(b.querySelector('span')) b.querySelector('span').style.color = '';
+                });
+                btn.classList.add('active');
+                btn.classList.remove('text-slate-400');
+                btn.classList.add('text-blue-600');
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } else {
+                document.getElementById(pageId).scrollIntoView({behavior: 'smooth'});
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if(window.innerWidth > 768) {
+                document.querySelectorAll('.page-view').forEach(p => p.style.display = 'block');
+            } else {
+                const activeBtn = document.querySelector('.mobile-nav button.active');
+                if(activeBtn) activeBtn.click();
+            }
+        });
+
+        // --- DARK MODE THEME LOGIC ---
+        const themeBtn = document.getElementById('theme-toggle');
+        const themeIcon = themeBtn.querySelector('i');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+        
+        function updateThemeIcon(isDark) {
+            if (isDark) {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                themeBtn.classList.replace('text-blue-600', 'text-yellow-400');
+                themeBtn.classList.add('bg-white/10');
+                themeBtn.classList.remove('bg-slate-50');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                themeBtn.classList.replace('text-yellow-400', 'text-blue-600');
+                themeBtn.classList.add('bg-slate-50');
+                themeBtn.classList.remove('bg-white/10');
+            }
+        }
+        
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+            updateThemeIcon(false);
+        }
+
+        let currentMethod = 'upi';
+
+        function setMethod(method) {
+            currentMethod = method;
+            document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active-tab'));
+            document.getElementById('tab-' + method).classList.add('active-tab');
+            
+            const label = document.getElementById('method-label');
+            const input = document.getElementById('recipient-id');
+            if(method === 'upi') {
+                label.innerText = 'UPI ID / Account No';
+                input.placeholder = 'CBL-XXXXXX';
+            } else if(method === 'paypal') {
+                label.innerText = 'PayPal Email';
+                input.placeholder = 'email@example.com';
+            } else if(method === 'mfs') {
+                label.innerText = 'Mobile Number (bKash/Nagad)';
+                input.placeholder = '01XXXXXXXXX';
+            }
+        }
+
+        async function confirmTransfer() {
+            const recipient = document.getElementById('recipient-id').value.trim();
+            const amount = document.getElementById('transfer-amount').value.trim();
+            
+            if(!recipient || !amount || parseFloat(amount) <= 0) {
+                alert('Please enter a valid recipient and amount!');
+                return;
+            }
+
+            const btn = document.querySelector('button[onclick="confirmTransfer()"]');
+            const originalText = btn.innerText;
+            btn.innerText = 'Processing Securely...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('{{ url_for("transfer") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient: recipient,
+                        amount: amount,
+                        method: currentMethod
+                    })
+                });
+                
+                const data = await response.json();
+                if(data.success) {
+                    document.getElementById('display-balance').innerText = data.new_balance;
+                    
+                    const now = new Date();
+                    const timeString = now.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+                    openReceipt(parseFloat(amount), currentMethod, data.recipient_name, timeString);
+                    
+                    document.getElementById('recipient-id').value = '';
+                    document.getElementById('transfer-amount').value = '';
+                    
+                    setTimeout(() => location.reload(), 2500); 
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch(e) {
+                alert('Transaction failed: ' + e);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function openReceipt(amount, method, recipient, time) {
+            document.getElementById('modal-amount').innerText = parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('modal-method').innerText = method;
+            document.getElementById('modal-recipient').innerText = recipient;
+            document.getElementById('modal-time').innerText = time;
+            document.getElementById('receiptModal').classList.add('active');
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptModal').classList.remove('active');
+        }
+
+        function openProfile() {
+            document.getElementById('profileModal').classList.add('active');
+        }
+
+        function closeProfile() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profile-preview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function reverseRow(event, btn, txId) {
+            event.stopPropagation(); 
+            if(!confirm('Are you sure you want to reverse/cancel this transaction? This action is immutable.')) return;
+            
+            try {
+                const response = await fetch('/reverse_transaction/' + txId, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                if(data.success) {
+                    alert('Success: ' + data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch(e) {
+                alert('Reversal process failed: ' + e);
+            }
+        }
+
+        setTimeout(() => {
+            const flashes = document.querySelectorAll('.flash-msg');
+            flashes.forEach(el => el.style.transition = 'opacity 0.5s ease');
+            flashes.forEach(el => el.style.opacity = '0');
+            setTimeout(() => flashes.forEach(el => el.style.display = 'none'), 500);
+        }, 5000);
+        
+        let inactivityTime = function () {
+            let time;
+            window.onload = resetTimer;
+            document.onmousemove = resetTimer;
+            document.onkeypress = resetTimer;
+            document.onscroll = resetTimer;
+            document.onclick = resetTimer;
+            document.ontouchstart = resetTimer;
+
+            function logout() { window.location.href = "{{ url_for('logout') }}"; }
+            function resetTimer() { clearTimeout(time); time = setTimeout(logout, 120000); }
+        };
+        inactivityTime();
+    </script>
+</body>
+</html>
